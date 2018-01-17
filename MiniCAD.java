@@ -5,6 +5,13 @@
  * Distributed under terms of the MIT license.
  */
 
+import java.io.File;
+import java.io.IOException;
+import java.io.FileOutputStream;
+import java.io.FileInputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.awt.FlowLayout;
 import java.awt.BorderLayout;
 import java.awt.Shape;
@@ -34,6 +41,7 @@ import javax.swing.JSlider;
 import javax.swing.JButton;
 
 import javax.swing.JColorChooser;
+import javax.swing.JFileChooser;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -52,6 +60,9 @@ public class MiniCAD extends JFrame {
 
     JButton color_btn = new JButton("Color");
 
+    JButton open_btn = new JButton("Open");
+    JButton save_btn = new JButton("Save");
+
 
     JSlider slider = new JSlider(0, 100);       // used to modify scale
     Canvas cvs = new Canvas();
@@ -61,14 +72,16 @@ public class MiniCAD extends JFrame {
         this.setSize(1024, 700);
         this.setLayout(new BorderLayout());
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.selection_panel.add(open_btn);
+        this.selection_panel.add(save_btn);
         this.selection_panel.add(select);
         this.selection_panel.add(line);
         this.selection_panel.add(rectangle);
         this.selection_panel.add(circle);
         this.selection_panel.add(text);
         this.selection_panel.add(text_input);
-        this.selection_panel.add(delete_btn);
         this.selection_panel.add(color_btn);
+        this.selection_panel.add(delete_btn);
         this.bg.add(select);
         this.bg.add(line);
         this.bg.add(rectangle);
@@ -161,6 +174,60 @@ public class MiniCAD extends JFrame {
                     }
                 }
                 repaint();
+            }
+        });
+
+        // open file
+        this.open_btn.addMouseListener(new MouseAdapter(){
+            public void mouseClicked(MouseEvent e){
+                JFileChooser chooser = new JFileChooser();
+                chooser.showOpenDialog(null);
+                File f = chooser.getSelectedFile();
+                try{
+                    FileInputStream file = new FileInputStream(f);
+                    ObjectInputStream in = new ObjectInputStream(file);
+                    cvs.shapes.clear();
+                    Shape restored_shape = null;
+                    while((restored_shape = (Shape)in.readObject()) != null){
+                        if(restored_shape instanceof myLine2D){
+                            cvs.shapes.add((myLine2D)restored_shape);
+                        }
+                        else if(restored_shape instanceof myRectangle2D){
+                            cvs.shapes.add((myRectangle2D)restored_shape);
+                        }
+                        else if(restored_shape instanceof myEllipse2D){
+                            cvs.shapes.add((myEllipse2D)restored_shape);
+                        }
+                        else if(restored_shape instanceof Text2D){
+                            cvs.shapes.add((Text2D)restored_shape);
+                        }
+                        else{
+                            System.out.println("FATAL ERROR!!!");
+                        }
+                        
+                    }
+                }
+                catch(Exception ex){}
+                repaint();
+            }
+        });
+
+        // save file
+        this.save_btn.addMouseListener(new MouseAdapter(){
+            public void mouseClicked(MouseEvent e){
+                JFileChooser chooser = new JFileChooser();
+                chooser.showSaveDialog(null);
+                File f = chooser.getSelectedFile();
+                try{
+                    FileOutputStream file = new FileOutputStream(f);
+                    ObjectOutputStream out = new ObjectOutputStream(file);
+                    for(Shape s : cvs.shapes){
+                        out.writeObject(s);
+                    }
+                    out.close();
+                    file.close();
+                }
+                catch(Exception ex){}
             }
         });
 
@@ -402,7 +469,7 @@ public class MiniCAD extends JFrame {
 }
 
 
-class myLine2D extends Line2D.Double{
+class myLine2D extends Line2D.Double implements Serializable{
     Color color;
     public myLine2D(double x1, double y1, double x2, double y2, Color color){
         super(x1, y1, x2, y2);
@@ -410,7 +477,7 @@ class myLine2D extends Line2D.Double{
     }
 }
 
-class myRectangle2D extends Rectangle2D.Double{
+class myRectangle2D extends Rectangle2D.Double implements Serializable{
     Color color;
     public myRectangle2D(double x1, double y1, double w, double h, Color color){
         super(x1, y1, w, h);
@@ -418,7 +485,7 @@ class myRectangle2D extends Rectangle2D.Double{
     }
 }
 
-class myEllipse2D extends Ellipse2D.Double{
+class myEllipse2D extends Ellipse2D.Double implements Serializable{
     Color color;
     public myEllipse2D(double x1, double y1, double w, double h, Color color){
         super(x1, y1, w, h);
@@ -427,7 +494,7 @@ class myEllipse2D extends Ellipse2D.Double{
 }
 
 
-class Text2D implements Shape{
+class Text2D implements Shape, Serializable{
     public String str;
     public double x;
     public double y;
