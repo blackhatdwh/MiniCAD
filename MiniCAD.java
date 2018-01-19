@@ -512,7 +512,7 @@ class Text2D implements Shape, Serializable{
     }
     public boolean contains(double x, double y){
         Point2D tmp = new Point2D.Double(x, y);
-        if(tmp.distance(this.x, this.y) < 5){
+        if(tmp.distance(this.x, this.y) < 25 && x > this.x && y < this.y){
             tmp = null;
             return true;
         }
